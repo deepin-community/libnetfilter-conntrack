@@ -1,0 +1,6 @@
+#
+# The orig tar-ball uploaded with 1.0.9-1 was generated from upstream/1.0.9,
+# _not_ the pristine-tar branch, so the upstream signature does not apply and we
+# need to override the warning until the next upstream release.
+#
+orig-tarball-missing-upstream-signature libnetfilter-conntrack_1.0.9.orig.tar.bz2

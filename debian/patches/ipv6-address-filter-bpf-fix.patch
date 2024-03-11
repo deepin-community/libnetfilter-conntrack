@@ -1,0 +1,38 @@
+Description: fix BPF for filtering IPv6 addresses
+ .
+ Each address in the filter is matched one 32-bit word at a time.  If any of the
+ first three words don't match, we jump to the end of the filter.  If the last
+ word does match, we jump to the end of the filter.  However, this is not right:
+ it means that if any of the first three words of an address don't match, all
+ subsequent addresses will be skipped.  Instead, jump to the next address.
+Bug-Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=690676
+Bug: https://bugzilla.netfilter.org/show_bug.cgi?id=1062
+Forwarded: https://lore.kernel.org/netfilter-devel/20230903171009.2002392-2-jeremy@azazel.net/T/#u
+Author: Jeremy Sowden <jeremy@azazel.net>
+Last-Update: 2023-09-03
+
+--- a/src/conntrack/bsf.c
++++ b/src/conntrack/bsf.c
+@@ -640,8 +640,8 @@ bsf_add_addr_ipv6_filter(const struct nfct_filter *f,
+ 					      j);
+ 			if (k < 3) {
+ 				j += nfct_bsf_cmp_k_stack_jf(this, ip,
+-						jf - j - 1,
+-						j, s);
++							     (3 - k) * 3 + 1,
++							     j, s);
+ 			} else {
+ 				/* last word: jump if true */
+ 				j += nfct_bsf_cmp_k_stack(this, ip, jf - j,
+@@ -655,7 +655,7 @@ bsf_add_addr_ipv6_filter(const struct nfct_filter *f,
+ 			this[jmp.line].jt += jmp.jt + j;
+ 		}
+ 		if (jmp.jf) {
+-			this[jmp.line].jf += jmp.jf + j;
++			this[jmp.line].jf += jmp.jf;
+ 		}
+ 	}
+ 
+-- 
+2.40.1
+
